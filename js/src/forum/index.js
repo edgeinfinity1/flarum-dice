@@ -11,23 +11,36 @@ const mounted = new Map();
 const wrappedPreview = Symbol('edgeDicePreview');
 const t = (key, values = {}) => extractText(app.translator.trans('edgeinfinity-dice.forum.' + key, values));
 const config = () => normalize(app.forum.attribute('edgeDiceConfig'));
+const editorSelector = 'textarea, input, [contenteditable="true"], .ProseMirror, .tiptap';
 function eligible(element) {
-  return !element.closest('textarea, input, [contenteditable="true"], .ProseMirror, .tiptap');
+  // Excerpts may retain rich HTML or flatten it to text. Only the actual post
+  // body and composer preview opt into tooltip/icon enhancement.
+  return !element.closest(editorSelector + ', .Synopsis-excerpt, .DiyHome-excerpt, .PostPreview, .DiscussionListItem')
+    && !!element.closest('.Post-body, .Post-preview');
 }
 function model(element) {
   const min = Number(element.dataset.min), max = Number(element.dataset.max);
   if (!Number.isInteger(min) || !Number.isInteger(max) || min > max || Math.abs(min)>1e9 || Math.abs(max)>1e9) return null;
   const result = element.hasAttribute('data-result') ? Number(element.dataset.result) : null;
   const state = element.dataset.state || 'pending';
-  const raw = element.querySelector('.EdgeDice-range')?.textContent || '[' + min + ', ' + max + ']';
+  const raw = element.querySelector('.EdgeDice-range')?.textContent ?? element.textContent ?? '[' + min + ', ' + max + ']';
   return {min, max, result: Number.isInteger(result) && result>=min && result<=max ? result : null, state, raw, edited:element.dataset.edited==='1'};
 }
 export function decorateDice(root) {
   const elements = [...(root.matches?.('.EdgeDice') ? [root] : []), ...root.querySelectorAll('.EdgeDice')];
   for (const el of elements) {
-    if (!eligible(el)) continue;
+    // Never alter editor DOM. Restore moved/cached components in summaries.
+    if (el.closest(editorSelector)) continue;
     const data = model(el);
     if (!data) continue;
+    if (!eligible(el)) {
+      if (mounted.has(el)) { m.render(el, []); mounted.delete(el); }
+      if (el.textContent !== data.raw || el.children.length) el.textContent = data.raw;
+      el.classList.remove('EdgeDice--enhanced');
+      el.removeAttribute('tabindex');
+      el.removeAttribute('data-effect');
+      continue;
+    }
     const fingerprint = JSON.stringify([data,config()]);
     if (mounted.get(el) === fingerprint && el.querySelector('.EdgeDice-inner')) continue;
     // s9e mutates preview DOM in place; cached Mithril vnode pointers must reset.
@@ -42,6 +55,7 @@ export function decorateDice(root) {
       : t('rolled', {min:data.min,max:data.max,faces:data.max-data.min+1,result:data.result}) + (selected.length ? '—' + (cfg.effectLabels[selected[0]] || t('effect_' + selected[0])) : '') + (data.edited && cfg.markEdited ? ' · ' + t('edited') : '');
     el.removeAttribute('tabindex');
     el.dataset.effect = effect;
+    el.classList.add('EdgeDice--enhanced');
     const die = resolveIcon(data.min,data.max,data.edited,cfg);
     m.render(el,m(Tooltip,{text:tooltip,container:'body'},m('span.EdgeDice-inner',{
       tabindex:0, role:'img', 'aria-label':tooltip, style:cssVariables(cfg,effect),

@@ -28,6 +28,13 @@ foreach($data['rolls'] as [$a,$b,$r])check($r>=$a&&$r<=$b,'result in range');
 $post->exists=true;$post->syncOriginal();
 $rolled=$render($f['renderer'],$post,$post->parsed_content);check(substr_count($rolled,'state="rolled"')===3,'render saved results');
 check(str_contains($f['renderer']->render($rolled),'data-result="0"'),'zero HTML');
+$html=$f['renderer']->render($rolled);
+check(strip_tags($html)==='[1,20] [-5,5] [0,0]','rolled excerpt text contains only original placeholders');
+check(!str_contains($html,'EdgeDice-result')&&!str_contains($html,'EdgeDice-icon')&&!str_contains($html,'tabindex='),'server HTML has no partial component or focus target');
+check(strip_tags($f['renderer']->render($pending))==='[1,20] [-5,5] [0,0]','pending excerpt has no question marks');
+$spaced=$parse('原文 [ -5 , +10 ] 与 [1, 20]');
+check(strip_tags($f['renderer']->render($render($f['renderer'],null,$spaced)))==='原文 [ -5 , +10 ] 与 [1, 20]','excerpt preserves placeholder whitespace and explicit signs');
+
 for($i=0;$i<20;$i++){check($render($f['renderer'],$post,$post->parsed_content)===$rolled,'repeat renders immutable');}
 $post->parsed_content=$parse('Edit surrounding text [1,20] [-5,5] [0,0]');$policy->saving($post);check($post->getAttribute('edge_dice')===$ledger,'text edit preserves rolls');
 $settings->values['edgeinfinity-dice.config']=json_encode(['allowEdit'=>false]);

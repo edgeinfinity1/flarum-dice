@@ -35,3 +35,5 @@ PHP ^8.3, Flarum ^2.0.2. No dependency on this site's custom extensions.
     npm run build
 
 Built JS/maps and artwork are included. The local Git repository is prepared for review; no remote, tag, GitHub release or Packagist publishing is implied. Before publishing, review artwork licensing, metadata, the compatibility matrix and docs/RELEASING.md.
+
+Excerpt behavior: rich/plain summaries keep the original placeholder text; dice are enhanced only in full posts and composer previews.

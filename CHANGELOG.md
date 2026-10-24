@@ -1,5 +1,9 @@
 # Changelog
 
+## Excerpt fallback — 2026-10-25
+- Keep original placeholders in rich/plain excerpts, search previews and homepage summaries.
+- Enhance dice only in full post bodies and composer previews; dispose tooltips when a rendered die moves into a summary.
+
 ## Final artwork review — 2026-10-25
 - Apply the owner-supplied final d20 artwork and regenerate its embedded CSS mask.
 
