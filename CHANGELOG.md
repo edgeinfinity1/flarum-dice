@@ -1,5 +1,8 @@
 # Changelog
 
+## Final artwork review — 2026-10-25
+- Apply the owner-supplied final d20 artwork and regenerate its embedded CSS mask.
+
 ## Unreleased second review — 2026-10-25
 - Prevent pointer clicks from pinning tooltips while retaining hover and keyboard focus support.
 - Restore configurable critical percentage/count modes, retaining both thresholds and legacy saved settings.
