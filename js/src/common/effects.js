@@ -3,16 +3,17 @@ export function effects(min, max, result, config) {
   const matches = [];
   const faces = max - min + 1;
   if (config.criticalEnabled && faces >= config.criticalMinFaces) {
-    const band = Math.min(Math.floor(faces / 2), config.criticalCount);
+    const count = config.criticalMode === 'percent' ? Math.max(1, Math.floor(faces * config.criticalPercent / 100)) : config.criticalCount;
+    const band = Math.min(Math.floor(faces / 2), count);
     if (result >= max - band + 1) matches.push(config.successHigh ? 'success' : 'failure');
     if (result <= min + band - 1) matches.push(config.successHigh ? 'failure' : 'success');
   }
   if (config.signEnabled && min < 0 && max > 0) matches.push(result > 0 ? 'positive' : result < 0 ? 'negative' : 'zero');
   const digits = String(Math.abs(result));
-  if (digits.length >= config.digitsMin) {
-    if (config.repeatEnabled && /^(\d)\1+$/.test(digits)) matches.push('repeat');
+  if (config.repeatEnabled && digits.length >= config.repeatDigitsMin && /^(\d)\1+$/.test(digits)) matches.push('repeat');
+  if (config.sequenceEnabled && digits.length >= config.sequenceDigitsMin) {
     const differences = [...digits].slice(1).map((d, i) => Number(d) - Number(digits[i]));
-    if (config.sequenceEnabled && (differences.every(d => d === 1) || differences.every(d => d === -1))) matches.push('sequence');
+    if (differences.every(d => d === 1) || differences.every(d => d === -1)) matches.push('sequence');
   }
   if (config.specialEnabled && config.specialNumbers.includes(result)) matches.push('special');
   return config.priority.filter(effect => matches.includes(effect));

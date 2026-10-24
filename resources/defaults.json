@@ -6,7 +6,6 @@
   "signEnabled": true,
   "repeatEnabled": true,
   "sequenceEnabled": true,
-  "digitsMin": 3,
   "specialEnabled": true,
   "specialNumbers": [
     42,
@@ -186,5 +185,9 @@
       "type": "builtin",
       "value": ""
     }
-  }
+  },
+  "criticalMode": "count",
+  "criticalPercent": 5,
+  "sequenceDigitsMin": 3,
+  "repeatDigitsMin": 2
 }

@@ -43,3 +43,11 @@ The review revision keeps the v1 [min,max,result] tuple format and adds an optio
 - Font icons accept one known FA style class and one icon class. Image URLs accept root-relative or HTTP(S) without credentials; scripts, data URLs and protocol-relative URLs are rejected, including for inactive icons. Images load in the browser with no referrer; no server-side image fetching is added.
 - No new permissions, tokens, accounts, sessions, scheduled tasks or network/system changes. Custom image URLs can intentionally reference external hosts.
 - Conventional dark data-theme values and .dark are supported; custom themes may override CSS variables.
+
+## Display rule upgrades
+
+Critical rules retain separate outcome-count and percentage values; switching modes changes presentation only. Percentage bands floor the inclusive face count times the percentage, include at least one, and cap each end at half the faces. Saved settings without a mode infer percentage only when they contain criticalPercent and no criticalCount; otherwise they infer count. Explicit modes always win.
+
+Legacy digitsMin is expanded to repeatDigitsMin and sequenceDigitsMin in memory; explicit split fields win. New defaults are 2 repeated digits and 3 sequential digits. Saving the settings form writes normalized current keys, while simply loading the extension does not rewrite the database. Chinese fallback names change to 连号 (repeated) and 同花顺 (sequential); internal keys, configured labels, colors and result ledgers remain unchanged.
+
+Pointer presses on a static result prevent focus acquisition, and clear any prior keyboard focus, so Flarum's focus-triggered tooltip cannot stick after a click. Tab navigation and hover remain available; no direct Bootstrap tooltip manipulation is added.

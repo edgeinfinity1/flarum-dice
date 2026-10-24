@@ -10,14 +10,23 @@ final class DiceConfig
     {
         if (is_string($value)) { if(strlen($value)>20000) throw new InvalidArgumentException('Configuration is too large.'); $value=json_decode($value,true); }
         if (!is_array($value)) throw new InvalidArgumentException('Configuration must be a JSON object.');
-        // beta.1 percentage configuration upgrades to one extreme outcome.
-        // Preserve unrelated colors and rules; the old percentage is no longer used.
-        unset($value['criticalPercent']);
+        // Older saved settings have no mode; preserve their selected rule and
+        // shared digit threshold without persisting an automatic site rewrite.
+        if (!array_key_exists('criticalMode', $value)) {
+            $value['criticalMode'] = array_key_exists('criticalPercent', $value) && !array_key_exists('criticalCount', $value) ? 'percent' : 'count';
+        }
+        if (array_key_exists('digitsMin', $value)) {
+            if (!is_int($value['digitsMin']) || $value['digitsMin'] < 2 || $value['digitsMin'] > 10) throw new InvalidArgumentException('Invalid legacy digit threshold.');
+            foreach (['repeatDigitsMin', 'sequenceDigitsMin'] as $key) if (!array_key_exists($key, $value)) $value[$key] = $value['digitsMin'];
+            unset($value['digitsMin']);
+        }
         $defaults=self::defaults();
         if(array_diff(array_keys($value),array_keys($defaults))) throw new InvalidArgumentException('Unknown configuration key.');
         $out=array_replace($defaults,$value);
-        foreach (['maxDice'=>[1,100],'criticalMinFaces'=>[2,2000000001],'criticalCount'=>[1,1000000000],'digitsMin'=>[2,10]] as $k=>[$min,$max])
+        foreach (['maxDice'=>[1,100],'criticalMinFaces'=>[2,2000000001],'criticalCount'=>[1,1000000000],'repeatDigitsMin'=>[2,10],'sequenceDigitsMin'=>[2,10]] as $k=>[$min,$max])
             if(!is_int($out[$k]) || $out[$k]<$min || $out[$k]>$max) throw new InvalidArgumentException($k.' is outside the allowed integer range.');
+        if (!in_array($out['criticalMode'], ['count', 'percent'], true)) throw new InvalidArgumentException('Invalid critical mode.');
+        if ((!is_int($out['criticalPercent']) && !is_float($out['criticalPercent'])) || !is_finite((float)$out['criticalPercent']) || $out['criticalPercent'] < 0.01 || $out['criticalPercent'] > 50) throw new InvalidArgumentException('Critical percentage must be between 0.01 and 50.');
         foreach(['criticalEnabled','successHigh','signEnabled','repeatEnabled','sequenceEnabled','specialEnabled','allowEdit','markEdited'] as $k)
             if(!is_bool($out[$k])) throw new InvalidArgumentException($k.' must be a boolean.');
         if(!is_array($out['specialNumbers']) || !array_is_list($out['specialNumbers']) || count($out['specialNumbers'])>100) throw new InvalidArgumentException('Use at most 100 special numbers.');

@@ -45,6 +45,9 @@ export function decorateDice(root) {
     const die = resolveIcon(data.min,data.max,data.edited,cfg);
     m.render(el,m(Tooltip,{text:tooltip,container:'body'},m('span.EdgeDice-inner',{
       tabindex:0, role:'img', 'aria-label':tooltip, style:cssVariables(cfg,effect),
+      // This is a static result, not a button. Pointer presses must not leave
+      // focus behind and pin the standard tooltip; Tab focus stays available.
+      onpointerdown:e=>{e.redraw=false;if(e.button===0){e.preventDefault();e.currentTarget.blur();}},
     },[
       m('span.EdgeDice-result', data.result === null ? '?' : String(data.result)),
       m('span.EdgeDice-range',data.raw),

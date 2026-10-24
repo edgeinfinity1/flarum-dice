@@ -17,7 +17,7 @@ export default class DiceSettingsPage extends ExtensionPage {
   }
   change() {this.setting(key)(JSON.stringify(this.config));}
   field(name,input,help) {return m('label.EdgeDiceAdmin-field',[m('span',t(name)),input,help&&m('span.helpText',t(help))]);}
-  number(name,min,max) {return this.field(name,m('input.FormControl',{type:'number',required:true,min,max,step:1,value:this.config[name],oninput:e=>{this.config[name]=Number(e.target.value);this.change();}}));}
+  number(name,min,max,step=1) {return this.field(name,m('input.FormControl',{name,type:'number',required:true,min,max,step,value:this.config[name],oninput:e=>{this.config[name]=Number(e.target.value);this.change();}}));}
   toggle(name) {return m('.Form-group',m(Switch,{state:this.config[name],onchange:value=>{this.config[name]=value;this.change();}},t(name)));}
   iconText(name) {return this.field(name,m('input.FormControl',{value:this.config[name],maxlength:100,oninput:e=>{this.config[name]=e.target.value;this.change();}}));}
   iconSettings() {
@@ -40,9 +40,11 @@ export default class DiceSettingsPage extends ExtensionPage {
       m(Form,{onsubmit:this.saveSettings.bind(this)},[
         m('h3',t('rules')),
         this.number('maxDice',1,100),this.toggle('allowEdit'),m('p.helpText',t('editing_help')),
-        this.toggle('criticalEnabled'),this.number('criticalMinFaces',2,2000000001),this.number('criticalCount',1,1000000000),this.toggle('successHigh'),
+        this.toggle('criticalEnabled'),this.number('criticalMinFaces',2,2000000001),
+        this.field('criticalMode',m('select.FormControl',{name:'criticalMode',value:this.config.criticalMode,onchange:e=>{this.config.criticalMode=e.target.value;this.change();}},['count','percent'].map(mode=>m('option',{value:mode},t('criticalMode_'+mode))))),
+        this.config.criticalMode==='percent'?this.number('criticalPercent',0.01,50,'any'):this.number('criticalCount',1,1000000000),this.toggle('successHigh'),
         m('p.helpText',t('critical_help')),
-        this.toggle('signEnabled'),this.toggle('repeatEnabled'),this.toggle('sequenceEnabled'),this.number('digitsMin',2,10),this.toggle('specialEnabled'),
+        this.toggle('signEnabled'),this.toggle('repeatEnabled'),this.number('repeatDigitsMin',2,10),this.toggle('sequenceEnabled'),this.number('sequenceDigitsMin',2,10),this.toggle('specialEnabled'),
         this.field('specialNumbers',m('input.FormControl',{value:this.specialText,oninput:e=>{this.specialText=e.target.value;this.config.specialNumbers=this.specialText.trim()?this.specialText.split(/[,，\s]+/).filter(Boolean).map(Number):[];this.change();}}),'numbers_help'),
         this.field('priority',m('input.FormControl',{value:this.priorityText,oninput:e=>{this.priorityText=e.target.value;this.config.priority=this.priorityText.split(/[,，\s]+/).filter(Boolean);this.change();}}),'priority_help'),
         m('h3',t('labels')),m('p.helpText',t('labels_help')),
