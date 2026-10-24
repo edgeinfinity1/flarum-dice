@@ -13,6 +13,7 @@ final class ConfigureFormatter
         $tag->template = '<xsl:choose><xsl:when test="ancestor::QUOTE or ancestor::CODE or ancestor::C or ancestor::URL or ancestor::IMG or ancestor::EMAIL"><xsl:apply-templates/></xsl:when><xsl:otherwise>'
             .'<span class="EdgeDice" data-min="{@min}" data-max="{@max}" tabindex="0">'
             .'<xsl:if test="@result"><xsl:attribute name="data-result"><xsl:value-of select="@result"/></xsl:attribute></xsl:if>'
+            .'<xsl:if test="@edited"><xsl:attribute name="data-edited"><xsl:value-of select="@edited"/></xsl:attribute></xsl:if>'
             .'<xsl:if test="@state"><xsl:attribute name="data-state"><xsl:value-of select="@state"/></xsl:attribute></xsl:if>'
             .'<span class="EdgeDice-result"><xsl:choose><xsl:when test="@result"><xsl:value-of select="@result"/></xsl:when><xsl:otherwise>?</xsl:otherwise></xsl:choose></span>'
             .'<span class="EdgeDice-range"><xsl:apply-templates/></span><i class="EdgeDice-icon icon fas fa-dice" aria-hidden="true"></i>'

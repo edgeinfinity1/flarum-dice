@@ -3,7 +3,7 @@ export function effects(min, max, result, config) {
   const matches = [];
   const faces = max - min + 1;
   if (config.criticalEnabled && faces >= config.criticalMinFaces) {
-    const band = Math.min(Math.floor(faces / 2), Math.max(1, Math.floor(faces * config.criticalPercent / 100)));
+    const band = Math.min(Math.floor(faces / 2), config.criticalCount);
     if (result >= max - band + 1) matches.push(config.successHigh ? 'success' : 'failure');
     if (result <= min + band - 1) matches.push(config.successHigh ? 'failure' : 'success');
   }
@@ -30,4 +30,24 @@ export function cssVariables(config, effect) {
     }
   }
   return vars;
+}
+
+export function resolveIcon(min, max, edited, config) {
+  if (edited && config.markEdited) return {type:'font', value:config.editedIcon};
+  const special = min === 1 ? config.specialIcons[String(max)] : null;
+  if (special?.enabled) return special.type === 'builtin' ? {type:'builtin',value:'d'+max} : special;
+  return {type:'font',value:config.genericIcon};
+}
+
+// Identical ranges are reused FIFO, matching the server policy. Previews only
+// display known results; new/changed ranges stay pending until the save succeeds.
+export function previewRolls(saved, ranges, config) {
+  const matches=saved.length===ranges.length && saved.every((s,i)=>s.min===ranges[i].min && s.max===ranges[i].max);
+  if (!config.allowEdit && saved.length && !matches) return ranges.map(r=>({...r,result:null,state:'invalid-edit',edited:false}));
+  const available=new Map();
+  for(const die of saved) {const key=die.min+':'+die.max;if(!available.has(key))available.set(key,[]);available.get(key).push(die);}
+  return ranges.map(r=>{
+    const previous=available.get(r.min+':'+r.max)?.shift();
+    return {...r,result:previous?.result??null,state:previous?'rolled':config.allowEdit?'pending':'unrolled',edited:!!previous?.edited || (config.allowEdit&&!matches)};
+  });
 }

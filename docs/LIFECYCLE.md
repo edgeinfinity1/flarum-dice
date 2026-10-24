@@ -1,27 +1,45 @@
 # Storage, security and lifecycle
 
 ## Atomic creation
-EDGEDICE is a TextFormatter tag that preserves the raw placeholder as its text. Parsing/rendering never rolls. The Eloquent CommentPost creating event gathers eligible parsed ranges, validates the configured count, calls random_int for each and writes a versioned ledger to posts.edge_dice in the same INSERT as the post. The database and server are trusted; neither a client seed nor client result is accepted. There is no roll/preview API. A failed request must not expose a result through an alternate preview path.
 
-The nullable text column is intentionally used instead of a child table: hard-deleting posts or discussions also deletes their dice data, even if the extension is disabled/uninstalled. No deletion listener, cron or orphan cleanup is required. Existing rows receive NULL, with no content migration or historical random draws.
+EDGEDICE preserves its raw placeholder. Parsing/rendering never rolls. CommentPost creating collects eligible ranges, validates the count, generates each result with random_int and writes posts.edge_dice in the same INSERT. There is no roll/preview API, client seed or accepted client result. The database and server are trusted.
 
-## Editing and recovery
-The ledger is immutable through normal model updates. The complete eligible range sequence must match on every edit of a rolled post. Changes to prose and whitespace are allowed. Removal, insertion, range changes, reordering of unequal ranges or moving a die into a quote/code block is rejected. Identical ranges are indistinguishable; this is not a cryptographic attestation of the surrounding narrative. Moderators can hide/delete the whole post. Authors who can delete and repost can still try again; this plugin does not replace moderation or claim provably fair administrator-independent randomness.
+A nullable post column avoids orphan rows: hard-deleting a post/discussion removes its dice even while the extension is disabled or removed. Installation adds NULL to existing rows without rewriting content or drawing historical results.
 
-No retroactive rolls occur for old posts or posts created while disabled. Content saved while disabled may lose custom formatter tags, but the ledger remains: on re-enable, render reparses only a ledger-bearing post in memory. Results are applied only if the entire range sequence matches. Changed/missing sequences never silently acquire a fresh roll or inherit results by partial matching. The user can restore the original sequence to recover the original ledger; otherwise it remains dormant.
+## Editing
+
+Normal Flarum permissions still apply. With allowEdit (default true), the saving hook restores the stored ledger before processing content changes; client/model-assigned ledgers are ignored. Unchanged range sequences preserve their results byte-for-byte. Changed sequences reuse identical ranges FIFO, even across positions, and draw unmatched ranges only in the save path. The replacement ledger omits every unused roll. The configured dice limit applies to new posts and changed sequences. Invalid nonempty ledgers reject content edits instead of silently rerolling.
+
+Any changed sequence marks every remaining die edited, including reused results, because removal can select a favorable outcome. Removing all dice leaves only {v:1,rolls:[],edited:true}, preserving provenance without retaining removed results. Later additions remain marked. Rendering this signal is optional (markEdited); hiding the signal does not erase it. Old posts manually edited to add eligible placeholders can roll and are marked edited.
+
+When allowEdit is false, a rolled post must keep its full range sequence; prose and placeholder whitespace can change. Posts without results stay unrolled on edit. The plugin does not block normal whole-post deletion.
+
+Identical ranges are indistinguishable. These rules do not attest to surrounding prose, prevent delete/repost retries, or prove fairness independent of the administrator. Concurrent edits follow the site's normal post-save behavior; no separate edit history or lock is introduced.
+
+## Preview and dormant recovery
+
+New previews show question marks. Editing previews match known ranges FIFO and display only existing results; unmatched ranges remain pending. In strict mode, an invalid changed sequence displays a short edit warning. Inputs and rich-text editing surfaces remain unenhanced.
+
+No browsing or reinstall operation rolls old posts. Disabled-period content may lose custom formatter tags, so rendering reparses ledger-bearing posts in memory. It displays results only if the entire current range sequence matches the ledger; otherwise results remain dormant. Restoring the original sequence recovers them. An explicit subsequent save with editing enabled may reconcile that sequence using the editing policy.
 
 ## Disable / remove / uninstall
-1. Back up the database before operational changes.
-2. Disable Dice normally, clear/rebuild Flarum caches/assets, then Composer-remove if desired. Old custom tags gracefully render their original [min, max] source without Dice; no PHP class name is stored in posts.
-3. The migration down intentionally preserves posts.edge_dice. Flarum's uninstall action therefore does **not** erase historical dice. The extension migration record is removed, while the retained column remains inert. Icons are embedded in compiled CSS and disappear when assets are rebuilt without Dice.
-4. Reinstall the package and enable: migration up checks for the existing column. The original ledger remains authoritative. Rebuild formatter and frontend caches. No reinstallation rerolls.
 
-To permanently destroy *all* historical dice, first export post IDs and edge_dice values, disable/remove the plugin and explicitly DROP the edge_dice column from the correctly prefixed posts table. This is an irreversible DBA operation and is never run automatically. Reinstall after that has no old results to restore.
+1. Back up the database before operational changes.
+2. Disable Dice normally and rebuild Flarum caches/assets before Composer removal. Old tags fall back to their raw [min, max] source without plugin PHP/frontend code.
+3. Migration down intentionally retains posts.edge_dice. Flarum uninstall removes the extension migration record, not its historical results. Embedded masks disappear after rebuilding without Dice.
+4. Reinstall and enable: migration up checks for the retained column; rebuild formatter and frontend assets. No reinstall rerolls.
+
+To permanently destroy all historical dice, export post IDs/ledgers, disable/remove the extension, and explicitly DROP edge_dice from the correctly prefixed posts table. This irreversible DBA action is never automatic.
+
+## Revision rollback
+
+The review revision keeps the v1 [min,max,result] tuple format and adds an optional boolean edited. The first beta.1 formatter can still display those results, ignoring the flag. Rolling back code restores the older strict editing policy and older display/settings behavior. Restoring an old database backup would discard subsequent legitimate posts/edits and is not the normal code rollback procedure.
 
 ## Compatibility and bounds
-- Current target: Flarum 2.0.2 / PHP 8.3. Flarum 1.x is not declared supported.
-- TextFormatter excludes code/quotes/link labels; escaping the opening bracket makes literal text. Link/reference ambiguities should use explicit code. No arbitrary expression syntax or unbounded integer arithmetic.
-- DOM parsing uses LIBXML_NONET and rejects DOCTYPE; result attributes are derived from the ledger, not user text. Admin colors are restricted to hex/empty, never arbitrary CSS or URLs. Priority and number lists are bounded and validated server-side.
-- No new permissions, API tokens, account/session records, external endpoints, scheduled tasks, system or network settings are required.
-- Standard dark data-theme values and .dark are supported; custom theme authors may override the CSS variables.
-- Preview shows “?” until creation. Edit preview can show existing results only for the unchanged complete sequence. Inputs and rich-text editing surfaces are excluded from enhancement.
+
+- Target: Flarum ^2.0.2 / PHP ^8.3; Flarum 1.x is unsupported.
+- Code, quotes and link labels are excluded. No arbitrary expressions or unbounded arithmetic.
+- XML parsing uses LIBXML_NONET and rejects DOCTYPE. Result/edited tag attributes are replaced from the ledger. Admin colors accept only hex/empty; labels are bounded plain text. Priority, numbers, booleans and icon structures are validated server-side.
+- Font icons accept one known FA style class and one icon class. Image URLs accept root-relative or HTTP(S) without credentials; scripts, data URLs and protocol-relative URLs are rejected, including for inactive icons. Images load in the browser with no referrer; no server-side image fetching is added.
+- No new permissions, tokens, accounts, sessions, scheduled tasks or network/system changes. Custom image URLs can intentionally reference external hosts.
+- Conventional dark data-theme values and .dark are supported; custom themes may override CSS variables.

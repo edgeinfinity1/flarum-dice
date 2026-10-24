@@ -30,6 +30,7 @@ $rolled=$render($f['renderer'],$post,$post->parsed_content);check(substr_count($
 check(str_contains($f['renderer']->render($rolled),'data-result="0"'),'zero HTML');
 for($i=0;$i<20;$i++){check($render($f['renderer'],$post,$post->parsed_content)===$rolled,'repeat renders immutable');}
 $post->parsed_content=$parse('Edit surrounding text [1,20] [-5,5] [0,0]');$policy->saving($post);check($post->getAttribute('edge_dice')===$ledger,'text edit preserves rolls');
+$settings->values['edgeinfinity-dice.config']=json_encode(['allowEdit'=>false]);
 foreach(['[1,20]','[1,21] [-5,5] [0,0]','[-5,5] [1,20] [0,0]','[1,20] [-5,5] [0,0] [1,6]','> [1,20] [-5,5] [0,0]'] as $bad){$post->parsed_content=$parse($bad);rejects(fn()=>$policy->saving($post),'reject changed sequence');}
 $post->parsed_content=$parse('[1,20] [-5,5] [0,0]');$post->setAttribute('edge_dice','forged');$policy->saving($post);check($post->getAttribute('edge_dice')===$ledger,'ignore result overwrite');
 $old=new CommentPost;$old->exists=true;$old->setRawAttributes(['content'=>$parse('old [1,6]'),'edge_dice'=>null],true);$old->parsed_content=$parse('edit old [1,20]');$policy->saving($old);check($old->getAttribute('edge_dice')===null,'legacy edit never rolls');
@@ -41,7 +42,7 @@ $bare=new s9e\TextFormatter\Configurator;$bare->rendering->setEngine('PHP');$bar
 check(str_contains($g['renderer']->render($post->parsed_content),'[1,20]'),'removed plugin shows source');
 check(!str_contains($g['renderer']->render($post->parsed_content),'EdgeDice'),'removed plugin no broken component');
 $defaults=DiceConfig::defaults();check(DiceConfig::validate($defaults)===$defaults,'default settings valid');
-foreach(['maxDice'=>101,'criticalPercent'=>0,'specialNumbers'=>['1'],'priority'=>['special'],'colors'=>['normal'=>['light'=>['text'=>'url(javascript:bad)']]],'bogus'=>true] as $key=>$value){$cfg=$defaults;$cfg[$key]=$value;rejects(fn()=>DiceConfig::validate($cfg),'reject config '.$key);}
+foreach(['maxDice'=>101,'criticalCount'=>0,'specialNumbers'=>['1'],'priority'=>['special'],'colors'=>['normal'=>['light'=>['text'=>'url(javascript:bad)']]],'bogus'=>true] as $key=>$value){$cfg=$defaults;$cfg[$key]=$value;rejects(fn()=>DiceConfig::validate($cfg),'reject config '.$key);}
 check(DiceConfig::decode('invalid')===$defaults,'corrupt settings safe fallback');
 foreach([['normal'=>'bad'],['normal'=>['light'=>'bad']],['normal'=>['light'=>['text'=>42]]],['normal'=>['moon'=>[]]]] as $colors){$cfg=$defaults;$cfg['colors']=$colors;rejects(fn()=>DiceConfig::validate($cfg),'reject malformed palette');}
 check(DiceConfig::validate(['colors'=>[]])['colors']===$defaults['colors'],'partial palette restores defaults');
@@ -56,4 +57,33 @@ check(DiceSyntax::document('<!DOCTYPE r [<!ENTITY e SYSTEM "file:///etc/passwd">
 check(DiceSyntax::ledger('{"v":1,"rolls":[[1,6,9]]}')===null,'reject invalid ledger result');
 check(DiceSyntax::ledger('{"v":1,"rolls":{"1":[1,6,3]}}')===null,'reject non-list ledger indices');
 foreach(['en','zh-Hans'] as $locale){$messages=Symfony\Component\Yaml\Yaml::parseFile(__DIR__.'/../locale/'.$locale.'.yml');check(isset($messages['edgeinfinity-dice']['forum']['error_locked']),'locale '.$locale);}
-echo json_encode(['passed'=>$count,'php'=>PHP_VERSION],JSON_PRETTY_PRINT).PHP_EOL;
+// Default-enabled editing: deterministic fixtures prove exact reuse and cleanup.
+$settings->values=[];
+$edit=new CommentPost;$edit->exists=true;
+$original=['v'=>1,'rolls'=>[[1,20,17],[1,6,2],[1,20,4]]];
+$edit->setRawAttributes(['content'=>$parse('[1,20] [1,6] [1,20]'),'edge_dice'=>json_encode($original)],true);
+$edit->parsed_content=$parse('[1,20] [0,0] [1,20]');$policy->saving($edit);
+$revised=DiceSyntax::ledger($edit->edge_dice);
+check($revised['rolls']===[[1,20,17],[0,0,0],[1,20,4]],'FIFO reuse preserves duplicate ranges and rolls only new range');
+check($revised['v']===1&&$revised['edited']===true,'legacy tuple layout retained and editing flagged');
+check(!in_array([1,6,2],$revised['rolls'],true),'unused result removed');
+check(substr_count($render($f['renderer'],$edit,$edit->parsed_content),'edited="1"')===3,'selection-risk survivors all marked');
+$edit->syncOriginal();$editedLedger=$edit->edge_dice;$edit->parsed_content=$parse('prose [1,20] [0,0] [1,20]');$policy->saving($edit);
+check($edit->edge_dice===$editedLedger,'prose edit keeps flag and results');
+$edit->syncOriginal();$edit->parsed_content=$parse('all removed');$policy->saving($edit);$empty=DiceSyntax::ledger($edit->edge_dice);
+check($empty['rolls']===[]&&$empty['edited']===true,'all removed results discarded, only provenance retained');
+$edit->syncOriginal();$edit->parsed_content=$parse('[0,0]');$policy->saving($edit);
+check(DiceSyntax::ledger($edit->edge_dice)['rolls']===[[0,0,0]],'reinsert after deletion creates fresh result');
+$settings->values['edgeinfinity-dice.config']=json_encode(['maxDice'=>1]);
+$edit->syncOriginal();$edit->parsed_content=$parse('[0,0] [1,6]');rejects(fn()=>$policy->saving($edit),'edit limit enforced');
+$settings->values=[];$legacy=new CommentPost;$legacy->exists=true;$legacy->setRawAttributes(['content'=>$parse('legacy'),'edge_dice'=>null],true);$legacy->parsed_content=$parse('[0,0]');$policy->saving($legacy);
+check(DiceSyntax::ledger($legacy->edge_dice)['edited']===true,'manual legacy edit can roll but is flagged');
+$config=DiceConfig::validate(['criticalPercent'=>5,'colors'=>['normal'=>['light'=>['text'=>'#123456']]]]);
+check($config['criticalCount']===1&&$config['allowEdit']===true&&$config['colors']['normal']['light']['text']==='#123456','old configuration upgraded without losing colors');
+foreach(['genericIcon'=>'<i>','editedIcon'=>'fas fa-dice onclick','effectLabels'=>['success'=>'<b>win</b>'],'specialIcons'=>['8'=>['type'=>'image','value'=>'javascript:alert(1)']]] as $key=>$value){$cfg=$defaults;$cfg[$key]=$value;rejects(fn()=>DiceConfig::validate($cfg),'reject unsafe '.$key);}
+foreach(['//bad.test/a','data:image/svg+xml,x','https://user:pass@example.com/x',"/bad path",'/bad'.chr(92).'path'] as $url)rejects(fn()=>DiceConfig::validate(['specialIcons'=>['8'=>['type'=>'image','value'=>$url]]]),'reject unsafe image URL');
+foreach(['/images/dice.png','https://example.com/dice.png'] as $url)check(DiceConfig::validate(['specialIcons'=>['8'=>['type'=>'image','value'=>$url]]])['specialIcons'][8]['value']===$url,'safe image allowed');
+check(DiceConfig::validate(['specialIcons'=>['8'=>['enabled'=>false]]])['specialIcons'][8]['enabled']===false,'individual icon disabled');
+check(DiceConfig::validate(['effectLabels'=>['success'=>'好耶']])['effectLabels']['success']==='好耶','custom effect wording');
+check(DiceSyntax::ledger('{"v":1,"rolls":[],"edited":"yes"}')===null,'malformed provenance rejected');
+echo json_encode(['passed' =>$count,'php'=>PHP_VERSION],JSON_PRETTY_PRINT).PHP_EOL;

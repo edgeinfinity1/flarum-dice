@@ -3,13 +3,14 @@ import { override } from 'flarum/common/extend';
 import Tooltip from 'flarum/common/components/Tooltip';
 import ComposerPostPreview from 'flarum/forum/components/ComposerPostPreview';
 import extractText from 'flarum/common/utils/extractText';
-import defaults from '../../../resources/defaults.json';
-import { effects, iconType, cssVariables } from '../common/effects';
+import normalize from '../common/config';
+import DiceIcon from '../common/DiceIcon';
+import { effects, resolveIcon, previewRolls, cssVariables } from '../common/effects';
 
 const mounted = new Map();
 const wrappedPreview = Symbol('edgeDicePreview');
 const t = (key, values = {}) => extractText(app.translator.trans('edgeinfinity-dice.forum.' + key, values));
-const config = () => app.forum.attribute('edgeDiceConfig') || defaults;
+const config = () => normalize(app.forum.attribute('edgeDiceConfig'));
 function eligible(element) {
   return !element.closest('textarea, input, [contenteditable="true"], .ProseMirror, .tiptap');
 }
@@ -19,7 +20,7 @@ function model(element) {
   const result = element.hasAttribute('data-result') ? Number(element.dataset.result) : null;
   const state = element.dataset.state || 'pending';
   const raw = element.querySelector('.EdgeDice-range')?.textContent || '[' + min + ', ' + max + ']';
-  return {min, max, result: Number.isInteger(result) && result>=min && result<=max ? result : null, state, raw};
+  return {min, max, result: Number.isInteger(result) && result>=min && result<=max ? result : null, state, raw, edited:element.dataset.edited==='1'};
 }
 export function decorateDice(root) {
   const elements = [...(root.matches?.('.EdgeDice') ? [root] : []), ...root.querySelectorAll('.EdgeDice')];
@@ -27,7 +28,7 @@ export function decorateDice(root) {
     if (!eligible(el)) continue;
     const data = model(el);
     if (!data) continue;
-    const fingerprint = JSON.stringify(data);
+    const fingerprint = JSON.stringify([data,config()]);
     if (mounted.get(el) === fingerprint && el.querySelector('.EdgeDice-inner')) continue;
     // s9e mutates preview DOM in place; cached Mithril vnode pointers must reset.
     m.render(el, []);
@@ -38,16 +39,16 @@ export function decorateDice(root) {
     const effect = selected[0] || 'normal';
     const tooltip = data.result === null
       ? t(data.state === 'invalid-edit' ? 'invalid_edit' : data.state === 'unrolled' ? 'unrolled' : 'pending')
-      : t('rolled', {min:data.min,max:data.max,faces:data.max-data.min+1,result:data.result}) + (selected.length ? ' · ' + selected.map(key => t('effect_' + key)).join(' / ') : '');
+      : t('rolled', {min:data.min,max:data.max,faces:data.max-data.min+1,result:data.result}) + (selected.length ? '—' + (cfg.effectLabels[selected[0]] || t('effect_' + selected[0])) : '') + (data.edited && cfg.markEdited ? ' · ' + t('edited') : '');
     el.removeAttribute('tabindex');
     el.dataset.effect = effect;
-    const die = iconType(data.min,data.max);
+    const die = resolveIcon(data.min,data.max,data.edited,cfg);
     m.render(el,m(Tooltip,{text:tooltip,container:'body'},m('span.EdgeDice-inner',{
       tabindex:0, role:'img', 'aria-label':tooltip, style:cssVariables(cfg,effect),
     },[
       m('span.EdgeDice-result', data.result === null ? '?' : String(data.result)),
       m('span.EdgeDice-range',data.raw),
-      m('i.EdgeDice-icon',{className:die==='generic'?'icon fas fa-dice':'EdgeDice-icon--'+die,'aria-hidden':'true'}),
+      m(DiceIcon,{icon:die,generic:cfg.genericIcon}),
     ])));
     mounted.set(el,fingerprint);
   }
@@ -59,10 +60,12 @@ function preview(root, composer) {
     const original = document.createElement('div');
     original.innerHTML = post.contentHtml() || '';
     const saved = [...original.querySelectorAll('.EdgeDice[data-result]')];
-    const matches = saved.length === nodes.length && saved.every((s,i) => s.dataset.min===nodes[i].dataset.min && s.dataset.max===nodes[i].dataset.max);
-    nodes.forEach((node,i) => {
-      if (saved.length && matches) { node.dataset.result=saved[i].dataset.result;node.dataset.state='rolled'; }
-      else { node.removeAttribute('data-result');node.dataset.state=saved.length?'invalid-edit':'unrolled'; }
+    const predictions=previewRolls(saved.map(model),nodes.map(model),config());
+    nodes.forEach((node,i)=>{
+      const prediction=predictions[i];
+      if(prediction.result===null)node.removeAttribute('data-result');else node.dataset.result=String(prediction.result);
+      node.dataset.state=prediction.state;
+      node.dataset.edited=prediction.edited?'1':'0';
     });
   }
   decorateDice(root);

@@ -48,6 +48,7 @@ final class DiceSyntax
         $data = json_decode($json, true);
         if (!is_array($data) || ($data['v'] ?? null) !== 1 || !is_array($data['rolls'] ?? null)
             || !array_is_list($data['rolls']) || count($data['rolls']) > 100) return null;
+        if (array_key_exists('edited', $data) && !is_bool($data['edited'])) return null;
         foreach ($data['rolls'] as $roll) {
             if (!is_array($roll) || !array_is_list($roll) || count($roll)!==3 || !is_int($roll[0]??null) || !is_int($roll[1]??null) || !is_int($roll[2]??null)
                 || $roll[0]>$roll[1] || abs($roll[0])>self::LIMIT || abs($roll[1])>self::LIMIT || $roll[2]<$roll[0] || $roll[2]>$roll[1]) return null;

@@ -22,8 +22,9 @@ final class RenderDice
             if (!DiceSyntax::range($node)) continue;
             // Result attributes in stored/imported XML are NEVER trusted.
             $node->removeAttribute('result');
+            $node->removeAttribute('edited');
             $node->setAttribute('state', $context instanceof CommentPost && $context->exists ? 'unrolled' : 'pending');
-            if ($valid) { $node->setAttribute('result',(string)$ledger['rolls'][$index][2]);$node->setAttribute('state','rolled'); }
+            if ($valid) { $node->setAttribute('result',(string)$ledger['rolls'][$index][2]);$node->setAttribute('state','rolled');$node->setAttribute('edited',!empty($ledger['edited'])?'1':'0'); }
             $index++;
         }
         return $doc->saveXML($doc->documentElement);

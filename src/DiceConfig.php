@@ -10,12 +10,15 @@ final class DiceConfig
     {
         if (is_string($value)) { if(strlen($value)>20000) throw new InvalidArgumentException('Configuration is too large.'); $value=json_decode($value,true); }
         if (!is_array($value)) throw new InvalidArgumentException('Configuration must be a JSON object.');
+        // beta.1 percentage configuration upgrades to one extreme outcome.
+        // Preserve unrelated colors and rules; the old percentage is no longer used.
+        unset($value['criticalPercent']);
         $defaults=self::defaults();
         if(array_diff(array_keys($value),array_keys($defaults))) throw new InvalidArgumentException('Unknown configuration key.');
         $out=array_replace($defaults,$value);
-        foreach (['maxDice'=>[1,100],'criticalMinFaces'=>[2,2000000001],'criticalPercent'=>[1,50],'digitsMin'=>[2,10]] as $k=>[$min,$max])
+        foreach (['maxDice'=>[1,100],'criticalMinFaces'=>[2,2000000001],'criticalCount'=>[1,1000000000],'digitsMin'=>[2,10]] as $k=>[$min,$max])
             if(!is_int($out[$k]) || $out[$k]<$min || $out[$k]>$max) throw new InvalidArgumentException($k.' is outside the allowed integer range.');
-        foreach(['criticalEnabled','successHigh','signEnabled','repeatEnabled','sequenceEnabled','specialEnabled'] as $k)
+        foreach(['criticalEnabled','successHigh','signEnabled','repeatEnabled','sequenceEnabled','specialEnabled','allowEdit','markEdited'] as $k)
             if(!is_bool($out[$k])) throw new InvalidArgumentException($k.' must be a boolean.');
         if(!is_array($out['specialNumbers']) || !array_is_list($out['specialNumbers']) || count($out['specialNumbers'])>100) throw new InvalidArgumentException('Use at most 100 special numbers.');
         foreach($out['specialNumbers'] as $n) if(!is_int($n) || abs($n)>DiceSyntax::LIMIT) throw new InvalidArgumentException('Special numbers must be supported integers.');
@@ -34,6 +37,36 @@ final class DiceConfig
             }
             if(array_diff(array_keys($out['colors'][$effect]),['light','dark'])) throw new InvalidArgumentException('Unknown color theme.');
         }
+        foreach (['genericIcon', 'editedIcon'] as $key) {
+            if (!self::fontIcon($out[$key])) throw new InvalidArgumentException('Use a Font Awesome style and one icon class.');
+        }
+        if (!is_array($out['effectLabels']) || array_diff(array_keys($out['effectLabels']), $defaults['priority'])) throw new InvalidArgumentException('Unknown effect label.');
+        $out['effectLabels'] = array_replace($defaults['effectLabels'], $out['effectLabels']);
+        foreach ($out['effectLabels'] as $label) {
+            if (!is_string($label) || mb_strlen($label) > 40 || preg_match('/[\x00-\x1f\x7f<>]/u', $label)) throw new InvalidArgumentException('Labels must be plain text up to 40 characters.');
+        }
+        if (!is_array($out['specialIcons']) || array_diff(array_keys($out['specialIcons']), array_keys($defaults['specialIcons']))) throw new InvalidArgumentException('Unknown special die.');
+        foreach ($defaults['specialIcons'] as $faces => $fallback) {
+            $icon = $out['specialIcons'][$faces] ?? [];
+            if (!is_array($icon) || array_diff(array_keys($icon), array_keys($fallback))) throw new InvalidArgumentException('Unknown icon property.');
+            $icon = array_replace($fallback, $icon);
+            if (!is_bool($icon['enabled']) || !in_array($icon['type'], ['builtin', 'font', 'image'], true) || !is_string($icon['value']) || strlen($icon['value']) > 2048) throw new InvalidArgumentException('Invalid icon configuration.');
+            // Validate even inactive icons so a later toggle cannot expose an unsafe URL.
+            if ($icon['type'] === 'font' && !self::fontIcon($icon['value'])) throw new InvalidArgumentException('Invalid Font Awesome icon.');
+            if ($icon['type'] === 'image' && !self::imageUrl($icon['value'])) throw new InvalidArgumentException('Images require a root-relative or HTTP(S) URL, without credentials.');
+            $out['specialIcons'][$faces] = $icon;
+        }
         return $out;
+    }
+    private static function fontIcon(mixed $value): bool
+    {
+        return is_string($value) && preg_match('/^(?:fas|far|fab|fal|fat|fad) fa-[a-z0-9]+(?:-[a-z0-9]+)*$/D', $value) === 1 && strlen($value) <= 100;
+    }
+    private static function imageUrl(string $value): bool
+    {
+        if ($value === '' || preg_match('/[\x00-\x20\x7f<>"\\\\]/', $value) || str_starts_with($value, '//')) return false;
+        if (str_starts_with($value, '/')) return true;
+        $parts = parse_url($value);
+        return $parts && in_array(strtolower($parts['scheme'] ?? ''), ['http', 'https'], true) && !empty($parts['host']) && !isset($parts['user']) && !isset($parts['pass']);
     }
 }

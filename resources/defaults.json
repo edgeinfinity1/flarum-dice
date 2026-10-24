@@ -2,7 +2,6 @@
   "maxDice": 50,
   "criticalEnabled": true,
   "criticalMinFaces": 20,
-  "criticalPercent": 5,
   "successHigh": true,
   "signEnabled": true,
   "repeatEnabled": true,
@@ -134,6 +133,58 @@
         "background": "#514421",
         "icon": ""
       }
+    }
+  },
+  "criticalCount": 1,
+  "allowEdit": true,
+  "markEdited": true,
+  "genericIcon": "far fa-dice",
+  "editedIcon": "far fa-question",
+  "effectLabels": {
+    "special": "",
+    "repeat": "",
+    "sequence": "",
+    "success": "",
+    "failure": "",
+    "positive": "",
+    "negative": "",
+    "zero": ""
+  },
+  "specialIcons": {
+    "4": {
+      "enabled": true,
+      "type": "builtin",
+      "value": ""
+    },
+    "6": {
+      "enabled": true,
+      "type": "builtin",
+      "value": ""
+    },
+    "8": {
+      "enabled": true,
+      "type": "builtin",
+      "value": ""
+    },
+    "10": {
+      "enabled": true,
+      "type": "builtin",
+      "value": ""
+    },
+    "12": {
+      "enabled": true,
+      "type": "builtin",
+      "value": ""
+    },
+    "20": {
+      "enabled": true,
+      "type": "builtin",
+      "value": ""
+    },
+    "100": {
+      "enabled": true,
+      "type": "builtin",
+      "value": ""
     }
   }
 }
