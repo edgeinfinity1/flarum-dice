@@ -2,9 +2,23 @@
 
 [English](README.md) · [配置指南](docs/CONFIGURATION.zh-CN.md) · [技术文档](docs/TECHNICAL.zh-CN.md)
 
+近段时间在x岛看了不少跑团, 感觉flarum作为论坛也应该有跑团的潜力, 所以做了这个骰子.
+
+总体来说比较美观, 可配置性也很高, 远比x岛的漂亮. 使用方法和x岛大差不差.
+
+设计的时候在兼容性, 安全性和防作弊上都有比较周全的考虑(当然也保持了轻松好玩).
+
+一些标准骰子(1d10, 1d20等)有特殊的图标, 共七个, 是我自己设计然后PS的. 也可以自行配置.
+
+这个插件也在我自己的论坛上运行: https://forum.monika.love
+
+注意: 大量开发工作由AI完成, 但均由我监管且经过测试.
+
+> 下面的内容就都是AI写的了
+
 为讨论增添一点随机乐趣。在帖子中输入 `[1, 20]`，Dice 就会把它变成由服务端生成并保存的结果，搭配骰子图标和自定义配色。
 
-**版本 0.1.0 · 仓库预览阶段。** 正在准备首次正式发布，**尚未提交到 Packagist**。
+**版本 0.1.0。** 已在 [Packagist](https://packagist.org/packages/edgeinfinity/flarum-dice) 发布。
 
 ![标准面数、自定义区间和特殊结果](docs/screenshots/forum-zh-light.png)
 
@@ -33,14 +47,13 @@
 
 需要 **Flarum 2.0.2 及以上的 2.x 版本**、**PHP 8.3 及以上的 8.x 版本**。不支持 Flarum 1.x，不依赖其它第三方扩展。
 
-仓库预览期间，请在 Flarum 根目录显式添加 Git 仓库：
+在 Flarum 根目录执行：
 
-    composer config repositories.edgeinfinity-dice vcs https://github.com/edgeinfinity1/flarum-dice
-    composer require edgeinfinity/flarum-dice:dev-main
+    composer require edgeinfinity/flarum-dice:^0.1.0
     php flarum migrate
     php flarum cache:clear
 
-然后在后台启用 **Dice**。`dev-main` 跟随待审阅分支，并非固定的正式发行版；提交 Packagist 后将补充常规版本安装命令。安装或更新前请备份数据库。
+然后在后台启用 **Dice**。安装或更新前请备份数据库。此前使用仓库预览版的用户，请先运行 `composer config --unset repositories.edgeinfinity-dice` 移除自定义 VCS 项，再改用正式版本约束。
 
 ## 自定义外观与规则
 
@@ -68,7 +81,7 @@
 - [配置与外观](docs/CONFIGURATION.zh-CN.md)
 - [架构、开发与验证](docs/TECHNICAL.zh-CN.md)
 - [存储、编辑与恢复](docs/LIFECYCLE.zh-CN.md)
-- [发布准备](docs/RELEASING.zh-CN.md) · [更新记录](CHANGELOG.md)
+- [发布流程](docs/RELEASING.zh-CN.md) · [更新记录](CHANGELOG.md)
 - [反馈问题](https://github.com/edgeinfinity1/flarum-dice/issues)
 
 截图使用浏览器中由插件实际渲染的演示数据；你站点的主题外观可能不同。

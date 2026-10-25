@@ -2,9 +2,23 @@
 
 [简体中文](README.zh-CN.md) · [Configuration](docs/CONFIGURATION.md) · [Technical documentation](docs/TECHNICAL.md)
 
+I recently read quite a lot of TRPGs on nmbxd.com. Since Flarum is a forum theoretically capable of TRPGs, I made this dice.
+
+It's beautiful and highly configurable, the usage is basically the same as nmbxd.
+
+Compatibility, security and possibility of cheating was also considered in its design, while still being user-friendly and fun.
+
+Some standard dice (1d10, 1d20, etc) have special icons, 7 in total. Manually designed and PSed by myself. Also configurable.
+
+This extension is also running on my own deployment: https://forum.monika.love
+
+Notice: This extension was made with massive help of AI, but under careful human supervise and field-tested.
+
+> Anything below this point was written by AI
+
 Add a little chance to your conversations. Type `[1, 20]` in a post and Dice turns it into a persistent, server-generated result, with a matching die icon and optional outcome colors.
 
-**Version 0.1.0 — repository preview.** The first release is being prepared; the package has **not been submitted to Packagist**.
+**Version 0.1.0.** Available on [Packagist](https://packagist.org/packages/edgeinfinity/flarum-dice).
 
 ![Standard dice, custom ranges and highlighted outcomes](docs/screenshots/forum-en-light.png)
 
@@ -33,14 +47,13 @@ The default limit is 50 dice per post (configurable from 1 to 100). Endpoints mu
 
 Requires **Flarum 2.0.2+ in the 2.x series** and **PHP 8.3+ in the 8.x series**. Flarum 1.x is unsupported. No other third-party extension is required.
 
-During this repository preview, add the Git repository explicitly from your Flarum root:
+Run these commands from your Flarum root:
 
-    composer config repositories.edgeinfinity-dice vcs https://github.com/edgeinfinity1/flarum-dice
-    composer require edgeinfinity/flarum-dice:dev-main
+    composer require edgeinfinity/flarum-dice:^0.1.0
     php flarum migrate
     php flarum cache:clear
 
-Enable **Dice** in administration. `dev-main` follows the review branch; it is not an immutable stable release. A versioned Packagist command will be added after publication. Back up your database before installation or updates.
+Enable **Dice** in administration. Back up your database before installation or updates. If you used the repository preview, remove its custom VCS entry with `composer config --unset repositories.edgeinfinity-dice` before switching to the stable constraint.
 
 ## Make it your own
 
@@ -68,7 +81,7 @@ Existing posts are never rolled automatically. Hiding preserves results; permane
 - [Configuration and appearance](docs/CONFIGURATION.md)
 - [Architecture, development and verification](docs/TECHNICAL.md)
 - [Storage, editing and recovery](docs/LIFECYCLE.md)
-- [Release preparation](docs/RELEASING.md) · [Changelog](CHANGELOG.md)
+- [Release process](docs/RELEASING.md) · [Changelog](CHANGELOG.md)
 - [Report an issue](https://github.com/edgeinfinity1/flarum-dice/issues)
 
 Screenshots use illustrative data rendered by the extension in a browser. Your forum's theme may look different.

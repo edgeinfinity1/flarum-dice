@@ -1,11 +1,12 @@
 # Changelog
 
-## 0.1.0 — repository preparation, 2026-10-25
+## 0.1.0 — 2026-10-26
 
-- Prepare public repository review with persistent dice, safe editing and raw-placeholder excerpts.
-- Split English and Chinese introductions, configuration, technical, lifecycle and release documentation.
-- Add illustrative browser screenshots and advance npm metadata to 0.1.0.
-- Formal tag, GitHub Release and Packagist publication remain pending owner review.
+- First stable release on GitHub and Packagist for Flarum 2.0.2+ / PHP 8.3+.
+- Persistent server-generated dice, safe editing and original-placeholder excerpts.
+- Configurable outcome rules, bilingual settings and seven owner-designed dice icons.
+- Owner-reviewed English/Chinese introductions, separate guides and 12 browser screenshots.
+- Release-triggered checks and Packagist synchronization with exact source/dist verification.
 
 ### Development history
 

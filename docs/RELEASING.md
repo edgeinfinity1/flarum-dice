@@ -1,20 +1,29 @@
-# Release preparation
+# Release process
 
 [简体中文](RELEASING.zh-CN.md) · [Technical documentation](TECHNICAL.md)
 
-0.1.0 is prepared for public repository review. The owner will edit the introduction before formal release. This milestone uploads the repository only: **no tag, GitHub Release, Packagist submission or publishing automation**. `dev-main` is a preview.
+Version 0.1.0 is the first stable release. The Composer package is [edgeinfinity/flarum-dice](https://packagist.org/packages/edgeinfinity/flarum-dice). Composer derives versions from immutable Git tags; composer.json must not contain a fixed version.
 
-## Before the first tagged release
+## Preparing a release
 
-1. Finish the introduction; review both languages, screenshot links, metadata and artwork credits.
-2. Validate Composer and install on a clean supported Flarum 2 instance. Check PHP 8.3/8.4, physical mobile and Safari when available; record untested combinations.
-3. Run PHP/JS tests and a clean Node 24 build; compare committed bundles/maps and validate translations. On an isolated site, check create/edit/reuse/removal, strict edits, previews, summaries and disable/reinstall behavior.
-4. Confirm npm versions, changelog and repository state. Composer must not contain a fixed version. Runtime files must not depend on local archives.
-5. Only after explicit owner authorization, create an immutable `v0.1.0` tag and GitHub Release from the reviewed commit.
-6. Submit to Packagist after separate authorization. Add automatic publishing later if requested, using encrypted repository secrets. Verify Composer P2 source/dist refs after indexing.
+1. Review both introductions, screenshots, artwork credits and compatibility requirements. Preserve the owner's introduction.
+2. Run Composer validation, PHP/JS tests, publication-script tests and a clean Node 24 build; compare committed bundles/maps. CI covers PHP 8.3/8.4. Record combinations not tested, including physical mobile and Safari.
+3. When runtime code changes, verify create/edit/reuse/removal, strict editing, previews, summaries and disable/reinstall behavior on an isolated supported Flarum instance.
+4. Advance js/package.json and both root version fields in js/package-lock.json; update CHANGELOG and installation examples. Keep runtime files independent of local archives.
+5. After owner authorization, push the reviewed commit and wait for successful Checks. Create a new immutable version tag and publish its GitHub Release. Never move a published tag to fix a release.
+
+## Packagist automation
+
+The package must be registered on Packagist once. Configure repository Actions variable PACKAGIST_USERNAME and encrypted secret PACKAGIST_TOKEN for a package maintainer. Credentials never belong in source, URLs or logs. The update workflow can use a safe API token.
+
+Publishing a GitHub Release runs the reusable Checks workflow against its tag, then calls the Packagist update API. It verifies both source and distribution references against that exact Git commit in Composer's P2 installation index. The package-details API may remain cached and is not used as the indexing gate.
+
+To retry an existing release, run **Actions → Publish to Packagist → Run workflow** from main and enter its existing tag (for example v0.1.0). Retrying only rechecks and synchronizes; it does not create or move a tag or release.
+
+Local publication-script tests:
+
+    node --test .github/scripts/update-packagist.test.mjs
 
 ## Local path installations
 
-A site's path-version override does not create a Git tag or publish anything. If intentionally advancing it, keep root requirement, path override, lock and Composer installed records consistent. Preserve all other packages and deployment modes. Never overwrite production with the development site's complete vendor, configuration or database.
-
-Repository Checks run PHP 8.3/8.4 and Node 24 tests/build on pushes and pull requests. They have read-only permissions and no release or Packagist steps.
+A site's path-version override does not publish anything. When intentionally advancing it, keep the root requirement, path override, lock and installed records consistent. Preserve all other packages and deployment modes. Never overwrite production with another site's vendor, configuration or database.
