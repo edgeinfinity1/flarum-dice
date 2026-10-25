@@ -1,5 +1,7 @@
 # Storage, security and lifecycle
 
+[简体中文](LIFECYCLE.zh-CN.md) · [Introduction](../README.md)
+
 ## Atomic creation
 
 EDGEDICE preserves its raw placeholder. Parsing/rendering never rolls. CommentPost creating collects eligible ranges, validates the count, generates each result with random_int and writes posts.edge_dice in the same INSERT. There is no roll/preview API, client seed or accepted client result. The database and server are trusted.

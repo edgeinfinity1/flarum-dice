@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.1.0 — repository preparation, 2026-10-25
+
+- Prepare public repository review with persistent dice, safe editing and raw-placeholder excerpts.
+- Split English and Chinese introductions, configuration, technical, lifecycle and release documentation.
+- Add illustrative browser screenshots and advance npm metadata to 0.1.0.
+- Formal tag, GitHub Release and Packagist publication remain pending owner review.
+
+### Development history
+
 ## Excerpt fallback — 2026-10-25
 - Keep original placeholders in rich/plain excerpts, search previews and homepage summaries.
 - Enhance dice only in full post bodies and composer previews; dispose tooltips when a rendered die moves into a summary.

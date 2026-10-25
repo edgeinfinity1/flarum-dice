@@ -31,5 +31,17 @@
         "color": "#ffffff"
       }
     }
-  }
+  },
+  "homepage": "https://github.com/edgeinfinity1/flarum-dice",
+  "support": {
+    "source": "https://github.com/edgeinfinity1/flarum-dice",
+    "issues": "https://github.com/edgeinfinity1/flarum-dice/issues",
+    "docs": "https://github.com/edgeinfinity1/flarum-dice/blob/main/docs/TECHNICAL.md"
+  },
+  "keywords": [
+    "flarum",
+    "dice",
+    "roleplay",
+    "random"
+  ]
 }
